@@ -44,18 +44,7 @@ local Library = {
     Signals = {};
     ScreenGui = ScreenGui;
 
-    ParticleConfig = {
-        Enabled = true;
-        Count = 40;
-        Color = Color3.fromRGB(100, 150, 255);
-        Speed = 0.5;
-        Size = 2;
-        ConnectionDistance = 100;
-        ConnectionOpacity = 0.15;
-        MouseRepel = true;
-        RepelRadius = 120;
-        RepelStrength = 2;
-    };
+
 };
 
 local RainbowStep = 0;
@@ -306,112 +295,6 @@ Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
     if Library.RegistryMap[Instance] then Library:RemoveFromRegistry(Instance); end;
 end));
 
--- Particle System
-function Library:InitParticles(ParentFrame)
-    if not Library.ParticleConfig.Enabled then return; end;
-    if Library.ParticleConnection then Library.ParticleConnection:Disconnect(); end;
-
-    local Particles = {};
-    local Connections = {};
-    local Config = Library.ParticleConfig;
-    local FramePos = ParentFrame.AbsolutePosition;
-    local FrameSize = ParentFrame.AbsoluteSize;
-
-    for i = 1, Config.Count do
-        local Particle = Drawing.new('Circle');
-        Particle.Radius = math.random(Config.Size * 5, Config.Size * 15) / 10;
-        Particle.Filled = true;
-        Particle.Transparency = math.random(10, 35) / 100;
-        Particle.Color = Config.Color;
-        Particle.Visible = true;
-        Particle.Position = Vector2.new(
-            FramePos.X + math.random(0, FrameSize.X),
-            FramePos.Y + math.random(0, FrameSize.Y)
-        );
-        Particle.Velocity = Vector2.new(
-            (math.random() - 0.5) * Config.Speed,
-            (math.random() - 0.5) * Config.Speed
-        );
-        table.insert(Particles, Particle);
-    end;
-
-    for i = 1, Config.Count do
-        local Line = Drawing.new('Line');
-        Line.Thickness = 0.5;
-        Line.Transparency = 0;
-        Line.Color = Config.Color;
-        Line.Visible = false;
-        table.insert(Connections, Line);
-    end;
-
-    local ConnectionIdx = 1;
-    Library.ParticleConnection = RunService.RenderStepped:Connect(function(Delta)
-        if not ParentFrame or not ParentFrame.Parent then
-            for _, p in next, Particles do p:Remove(); end;
-            for _, c in next, Connections do c:Remove(); end;
-            return;
-        end;
-
-        local CurrentPos = ParentFrame.AbsolutePosition;
-        local CurrentSize = ParentFrame.AbsoluteSize;
-        local MousePos = Vector2.new(Mouse.X, Mouse.Y);
-        ConnectionIdx = 1;
-
-        for _, Particle in next, Particles do
-            -- Update position
-            Particle.Position = Particle.Position + Particle.Velocity;
-
-            -- Bounce off edges
-            if Particle.Position.X < CurrentPos.X or Particle.Position.X > CurrentPos.X + CurrentSize.X then
-                Particle.Velocity = Vector2.new(-Particle.Velocity.X, Particle.Velocity.Y);
-            end;
-            if Particle.Position.Y < CurrentPos.Y or Particle.Position.Y > CurrentPos.Y + CurrentSize.Y then
-                Particle.Velocity = Vector2.new(Particle.Velocity.X, -Particle.Velocity.Y);
-            end;
-
-            -- Clamp to frame
-            Particle.Position = Vector2.new(
-                math.clamp(Particle.Position.X, CurrentPos.X, CurrentPos.X + CurrentSize.X),
-                math.clamp(Particle.Position.Y, CurrentPos.Y, CurrentPos.Y + CurrentSize.Y)
-            );
-
-            -- Mouse repulsion
-            if Config.MouseRepel then
-                local Dist = (Particle.Position - MousePos).Magnitude;
-                if Dist < Config.RepelRadius then
-                    local Dir = (Particle.Position - MousePos).Unit;
-                    Particle.Velocity = Particle.Velocity + Dir * Config.RepelStrength * Delta * 60;
-                end;
-            end;
-
-            -- Damping
-            Particle.Velocity = Particle.Velocity * 0.99;
-
-            -- Connect nearby particles
-            for _, Other in next, Particles do
-                if Particle ~= Other and ConnectionIdx <= #Connections then
-                    local Dist = (Particle.Position - Other.Position).Magnitude;
-                    if Dist < Config.ConnectionDistance then
-                        local Line = Connections[ConnectionIdx];
-                        Line.From = Particle.Position;
-                        Line.To = Other.Position;
-                        Line.Transparency = (1 - (Dist / Config.ConnectionDistance)) * Config.ConnectionOpacity;
-                        Line.Visible = true;
-                        ConnectionIdx = ConnectionIdx + 1;
-                    end;
-                end;
-            end;
-        end;
-
-        -- Hide unused connections
-        for i = ConnectionIdx, #Connections do
-            Connections[i].Visible = false;
-        end;
-    end);
-
-    Library.Particles = Particles;
-    Library.ParticleLines = Connections;
-end;
 
 local BaseAddons = {};
 do
