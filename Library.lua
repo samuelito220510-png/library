@@ -53,35 +53,35 @@ local Anim = {
     Bounce = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
 }
 
-local function Tween(Instance, Properties, Info)
+local function Tween(Obj, Properties, Info)
     Info = Info or Anim.Normal
-    TweenService:Create(Instance, Info, Properties):Play()
+    TweenService:Create(Obj, Info, Properties):Play()
 end
 
-local function SetCorner(Instance, Radius)
+local function SetCorner(Obj, Radius)
     Radius = Radius or UDim.new(0, 6)
-    local Corner = Instance:FindFirstChildOfClass('UICorner')
+    local Corner = Obj:FindFirstChildOfClass('UICorner')
     if not Corner then
         Corner = Instance.new('UICorner')
-        Corner.Parent = Instance
+        Corner.Parent = Obj
     end
     Corner.CornerRadius = Radius
 end
 
-local function SetStroke(Instance, Color, Thickness)
+local function SetStroke(Obj, Color, Thickness)
     Thickness = Thickness or 1
-    local Stroke = Instance:FindFirstChildOfClass('UIStroke')
+    local Stroke = Obj:FindFirstChildOfClass('UIStroke')
     if not Stroke then
         Stroke = Instance.new('UIStroke')
-        Stroke.Parent = Instance
+        Stroke.Parent = Obj
     end
     Stroke.Color = Color or Theme.Border
     Stroke.Thickness = Thickness
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 end
 
-local function SetShadow(Instance, Offset, Size, Transparency)
-    local Shadow = Instance:FindFirstChild('__Shadow')
+local function SetShadow(Obj, Offset, Size, Transparency)
+    local Shadow = Obj:FindFirstChild('__Shadow')
     if Shadow then Shadow:Destroy() end
 
     Shadow = Instance.new('ImageLabel')
@@ -95,8 +95,8 @@ local function SetShadow(Instance, Offset, Size, Transparency)
     Shadow.Size = UDim2.new(1, Size or 20, 1, Size or 20)
     Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
     Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    Shadow.ZIndex = Instance.ZIndex - 1
-    Shadow.Parent = Instance
+    Shadow.ZIndex = Obj.ZIndex - 1
+    Shadow.Parent = Obj
 end
 
 -- ================================================================
@@ -184,16 +184,16 @@ function Library:MapValue(Value, MinA, MaxA, MinB, MaxB)
     return (1 - ((Value - MinA) / (MaxA - MinA))) * MinB + ((Value - MinA) / (MaxA - MinA)) * MaxB
 end
 
-function Library:AddToRegistry(Instance, Properties, IsHud)
+function Library:AddToRegistry(Obj, Properties, IsHud)
     local Idx = #Library.Registry + 1
-    local Data = { Instance = Instance; Properties = Properties; Idx = Idx }
+    local Data = { Instance = Obj; Properties = Properties; Idx = Idx }
     table.insert(Library.Registry, Data)
-    Library.RegistryMap[Instance] = Data
+    Library.RegistryMap[Obj] = Data
     if IsHud then table.insert(Library.HudRegistry, Data) end
 end
 
-function Library:RemoveFromRegistry(Instance)
-    local Data = Library.RegistryMap[Instance]
+function Library:RemoveFromRegistry(Obj)
+    local Data = Library.RegistryMap[Obj]
     if Data then
         for Idx = #Library.Registry, 1, -1 do
             if Library.Registry[Idx] == Data then table.remove(Library.Registry, Idx) end
@@ -201,7 +201,7 @@ function Library:RemoveFromRegistry(Instance)
         for Idx = #Library.HudRegistry, 1, -1 do
             if Library.HudRegistry[Idx] == Data then table.remove(Library.HudRegistry, Idx) end
         end
-        Library.RegistryMap[Instance] = nil
+        Library.RegistryMap[Obj] = nil
     end
 end
 
@@ -234,30 +234,30 @@ function Library:OnUnload(Callback)
     Library.OnUnload = Callback
 end
 
-Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
-    if Library.RegistryMap[Instance] then
-        Library:RemoveFromRegistry(Instance)
+Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Obj)
+    if Library.RegistryMap[Obj] then
+        Library:RemoveFromRegistry(Obj)
     end
 end))
 
 -- ================================================================
 --  DRAGGING — Smooth, modern
 -- ================================================================
-function Library:MakeDraggable(Instance, Cutoff)
-    Instance.Active = true
+function Library:MakeDraggable(Obj, Cutoff)
+    Obj.Active = true
     local Dragging = false
     local DragStart, StartPos
 
-    Instance.InputBegan:Connect(function(Input)
+    Obj.InputBegan:Connect(function(Input)
         if Input.UserInputType == Enum.UserInputType.MouseButton1 then
             local ObjPos = Vector2.new(
-                Mouse.X - Instance.AbsolutePosition.X,
-                Mouse.Y - Instance.AbsolutePosition.Y
+                Mouse.X - Obj.AbsolutePosition.X,
+                Mouse.Y - Obj.AbsolutePosition.Y
             )
             if ObjPos.Y > (Cutoff or 40) then return end
             Dragging = true
             DragStart = Input.Position
-            StartPos = Instance.Position
+            StartPos = Obj.Position
             Input.Changed:Connect(function()
                 if Input.UserInputState == Enum.UserInputState.End then
                     Dragging = false
@@ -266,10 +266,10 @@ function Library:MakeDraggable(Instance, Cutoff)
         end
     end)
 
-    Instance.InputChanged:Connect(function(Input)
+    Obj.InputChanged:Connect(function(Input)
         if Dragging and Input.UserInputType == Enum.UserInputType.MouseMovement then
             local Delta = Input.Position - DragStart
-            Instance.Position = UDim2.new(
+            Obj.Position = UDim2.new(
                 StartPos.X.Scale, StartPos.X.Offset + Delta.X,
                 StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
             )
@@ -336,11 +336,11 @@ end
 -- ================================================================
 --  HIGHLIGHT SYSTEM
 -- ================================================================
-function Library:OnHighlight(HighlightInstance, Instance, Properties, PropertiesDefault)
+function Library:OnHighlight(HighlightInstance, Target, Properties, PropertiesDefault)
     HighlightInstance.MouseEnter:Connect(function()
-        local Reg = Library.RegistryMap[Instance]
+        local Reg = Library.RegistryMap[Target]
         for Property, ColorIdx in next, Properties do
-            Tween(Instance, {[Property] = Theme[ColorIdx] or ColorIdx}, Anim.Fast)
+            Tween(Target, {[Property] = Theme[ColorIdx] or ColorIdx}, Anim.Fast)
             if Reg and Reg.Properties[Property] then
                 Reg.Properties[Property] = ColorIdx
             end
@@ -348,9 +348,9 @@ function Library:OnHighlight(HighlightInstance, Instance, Properties, Properties
     end)
 
     HighlightInstance.MouseLeave:Connect(function()
-        local Reg = Library.RegistryMap[Instance]
+        local Reg = Library.RegistryMap[Target]
         for Property, ColorIdx in next, PropertiesDefault do
-            Tween(Instance, {[Property] = Theme[ColorIdx] or ColorIdx}, Anim.Fast)
+            Tween(Target, {[Property] = Theme[ColorIdx] or ColorIdx}, Anim.Fast)
             if Reg and Reg.Properties[Property] then
                 Reg.Properties[Property] = ColorIdx
             end
