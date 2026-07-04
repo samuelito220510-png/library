@@ -2460,16 +2460,7 @@ function Library:CreateWindow(...)
     };
 
     -- Particle Background Layer (behind everything)
-    local ParticleLayer = Library:Create('Frame', {
-        Name = 'ParticleLayer';
-        BackgroundTransparency = 1;
-        BorderSizePixel = 0;
-        Position = Config.Position;
-        Size = Config.Size;
-        Visible = false;
-        ZIndex = 0;
-        Parent = ScreenGui;
-    });
+
 
     local Outer = Library:Create('Frame', {
         AnchorPoint = Config.AnchorPoint,
