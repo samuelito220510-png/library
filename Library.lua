@@ -63,6 +63,9 @@ table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
 
         Library.CurrentRainbowHue = Hue;
         Library.CurrentRainbowColor = Color3.fromHSV(Hue, 0.8, 1);
+        Library.AccentColor = Library.CurrentRainbowColor;
+        Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor);
+        Library:UpdateColorsUsingRegistry();
     end
 end))
 
